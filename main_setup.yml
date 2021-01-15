@@ -1,0 +1,54 @@
+- hosts: frontend_lb
+  vars_files: variables.yml.j2
+  tasks:
+          - name: "Install haproxy softwares"
+            package:
+                    name: haproxy
+                    state: present
+
+          - name: "Copy the configuration file"
+            template:
+                    src: "{{ lb_config_location }}"
+                    dest: /etc/haproxy/
+
+          - name: "Start the service"
+            service:
+                    name: haproxy
+                    state: started
+
+          - name: "Configure firewall for haproxy port"
+            firewalld:
+                    port: "{{ portnumber }}/tcp"
+                    state: enabled
+
+
+
+- hosts: backend_lb
+  vars_files: variables.yml.j2
+  tasks:
+          - name: "Install httpd software"
+            package:
+                    name: "{{ item }}"
+                    state: present
+            loop:
+                    - httpd
+                    - php
+
+          - name: "Copy the content for web server"
+            copy:
+                    src: "{{ content_location }}"
+                    dest: /var/www/html
+
+          - name: "Start the service"
+            service:
+                    name: httpd
+                    state: started
+
+          - name: "Create the Firewall Rules for the port"
+            firewalld:
+                    port: "{{ web_portnumber }}/tcp"
+                    state: enabled
+
+
+
+
